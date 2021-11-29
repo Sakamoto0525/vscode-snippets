@@ -1,0 +1,218 @@
+{
+	"パスパラメータ取得": {
+		"scope": "go",
+		"prefix": "get vars",
+		"body": [
+			"vars := mux.Vars(r)",
+		],
+		"description": "Gorilla/muxパッケージを使用してパスパラメータ(map)を取得する"
+	},
+
+	"Body取得": {
+		"scope": "go",
+		"prefix": "get body",
+		"body": [
+			"reqBody, err := ioutil.ReadAll(r.Body)",
+			"if err != nil {",
+			"}\n",
+			"var user User",
+			"if err := json.Unmarshal(reqBody, &user); err != nil {",
+			"}\n",
+		],
+		"description": "net/httpパッケージのr(Request)を使用してBodyを取得し、\njsonパッケージでパースして構造体に格納する"
+	},
+
+	"トランザクション": {
+		"scope": "go",
+		"prefix": "transaction",
+		"body": [
+			"tx := db.Begin()",
+			"if err := tx.Table(\"user\").Create(&user).Error; err != nil {",
+			"   tx.Rollback()",
+			"}",
+			"tx.Commit()"
+		],
+		"description": "gormパッケージでのトランザクション"
+	},
+	
+	"テストスニペット": {
+		"scope": "go",
+		"prefix": "test",
+		"body": [
+			"package tests",
+			"",
+			"import \"testing\"\n",
+			"",
+			"func setup(t *testing.T) {",
+			"}\n",
+			"func teardown(t *testing.T) {",
+			"}\n",
+			"func Test(t *testing.T) {",
+			"    t.Run(\"\", func(t *testing.T) {",
+			"    })",
+			"}"
+		],
+		"description": "テストテンプレート"
+	},
+
+	"テストFuncスニペット": {
+		"scope": "go",
+		"prefix": "test func",
+		"body": [
+			"func Test(t *testing.T) {",
+			"    t.Run(\"\", func(t *testing.T) {",
+			"    })",
+			"}"
+		],
+		"description": "テストFuncスニペット"
+	},
+
+	/**
+	 * GET API スニペット
+	 * 
+	 * HTTPクライアントライブラリのgorilla/muxを使用している
+	 * importしているライブラリ
+	 * "testing", "net/http", "net/httptest", "github.com/gorilla/mux"
+	 *
+	 **/
+	"GET API Test Snippet": {
+		"scope": "go",
+		"prefix": "test get func",
+		"body": [
+			"func Test_Get(t *testing.T) {",
+			"    var (",
+			"        reqURL        = \"/api/v1/users\"",
+			"        handleFuncURL = \"/api/v1/users\"",
+			"    )\n",
+			"    t.Run(\"\", func(t *testing.T) {",
+			"        req := httptest.NewRequest(\"GET\", reqURL, nil)",
+			"        rec := httptest.NewRecorder()",
+			"        r := mux.NewRouter()",
+			"        r.HandleFunc(handleFuncURL, UserFindAll()).Methods(\"GET\")",
+			"        r.ServeHTTP(rec, req)",
+			"        if http.StatusOK != rec.Code {",
+			"        }",
+			"    })",
+			"}"
+		],
+		"description": "APIのGETリクエストFuncスニペット"
+	},
+
+	/**
+	 * POST API スニペット
+	 * 
+	 * HTTPクライアントライブラリのgorilla/muxを使用している
+	 * importしているライブラリ
+	 * "testing", "net/http", "net/httptest", "github.com/gorilla/mux",
+	 * "bytes", "fmt"
+	 *
+	 **/
+	"POST API Test Snippet": {
+		"scope": "go",
+		"prefix": "test post func",
+		"body": [
+			"func Test_Post(t *testing.T) {",
+			"    var (",
+			"        name          = \"テスト太郎\"",
+			"        age           = 24",
+			"        reqURL        = \"/api/v1/users\"",
+			"        handleFuncURL = \"/api/v1/users\"",
+			"    )\n",
+			"    t.Run(\"\", func(t *testing.T) {",
+			"        reqBody := bytes.NewBufferString(",
+			"            fmt.Sprintf(",
+			"                `{\"name\": %d, \"age\": %s}`,",
+			"                name, age,",
+			"            ))\n",
+			"        req := httptest.NewRequest(\"POST\", reqURL, reqBody)",
+			"        rec := httptest.NewRecorder()",
+			"        r := mux.NewRouter()",
+			"        r.HandleFunc(handleFuncURL, UserCreate()).Methods(\"POST\")",
+			"        r.ServeHTTP(rec, req)\n",
+			"        if http.StatusOK != rec.Code {",
+			"        }",
+			"    })",
+			"}"
+		],
+		"description": "APIのPOSTリクエストFuncスニペット"
+	},
+
+	////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////// Infraテストに関するスニペット
+	////////////////////////////////////////////////////////////////////////////////////
+
+		
+	/**
+	 * GET API スニペット
+	 * 
+	 * HTTPクライアントライブラリのgorilla/muxを使用している
+	 * importしているライブラリ
+	 * "testing", "net/http", "net/httptest", "github.com/gorilla/mux"
+	 *
+	 **/
+	 "Get DB Test Snippet": {
+		"scope": "go",
+		"prefix": "test db get func",
+		"body": [
+			"func Test_Infra_User_FindByID(t *testing.T) {",
+			"   var (",
+			"       id   = 1",
+			"       name = \"テスト名前\"",
+			"   )\n",
+			"   t.Run(\"取得SQLが正しく発行されていること\", func(t *testing.T) {",
+			"       db, mock, userRepo := setup(t)",
+			"       defer teardown(db)",
+			"       mock.ExpectQuery(regexp.QuoteMeta(\"SELECT * FROM `user` WHERE `user`.`id` = ? ORDER BY `user`.`id` ASC LIMIT 1\")).",
+			"           WithArgs(id).",
+			"           WillReturnRows(sqlmock.NewRows([]string{\"id\", \"name\"}).",
+			"               AddRow(id, name))\n",
+			"       if _, err := userRepo.FindByID(id); err != nil {",
+			"           t.Fatal(err)",
+			"       }",
+			"    })",
+			"}"
+		],
+		"description": "DBのGETリクエストFuncスニペット"
+	},
+
+	/**
+	 * POST API スニペット
+	 * 
+	 * HTTPクライアントライブラリのgorilla/muxを使用している
+	 * importしているライブラリ
+	 * "testing", "net/http", "net/httptest", "github.com/gorilla/mux"
+	 *
+	 **/
+	 "Post DB Test Snippet": {
+		"scope": "go",
+		"prefix": "test db post func",
+		"body": [
+			"func TestUserCreate(t *testing.T) {",
+			"   var (",
+			"       name  = \"テスト太郎\"",
+			"       email = \"test@example.com\"",
+			"   ",
+			"   )",
+			"   t.Run(\"作成SQLが正しく発行されていること\", func(t *testing.T) {",
+			"       db, mock, userRepo := setup(t)",
+			"       defer teardown(db)\n",
+			"       user := &model.User{",
+			"           Name:  name,",
+			"           Email: email,",
+			"       }\n",
+			"       mock.ExpectBegin()",
+			"       mock.ExpectExec(regexp.QuoteMeta(\"INSERT INTO `user` (`name`,`email`) VALUES (?,?)\")).",
+			"           WithArgs(name, email).",
+			"           WillReturnResult(sqlmock.NewResult(1, 2)) // NewResult(影響のあるレコード数, 影響のあるカラム数)",
+			"       mock.ExpectCommit()\n",
+			"       _, err := userRepo.Create(user)",
+			"       if err != nil {",
+			"           t.Fatal(err)",
+			"       }",
+			"   })",
+			"}",
+		],
+		"description": "DBのGETリクエストFuncスニペット"
+	},
+}
+
